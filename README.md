@@ -1,4 +1,5 @@
 # PTY-IQ — Sistema de Predicción de Vuelos ✈️
+**Demo en vivo:** https://germanrm11.github.io/PTY-IQ/PTY-IQ_panel.html
 
 Sistema de inteligencia artificial para predecir retrasos de vuelos
 en el Aeropuerto Internacional de Tocumen, Panamá.
@@ -8,7 +9,7 @@ en el Aeropuerto Internacional de Tocumen, Panamá.
 - ✅ Fase 2: Modelo XGBoost — 92.9% de precisión
 - ✅ Fase 3: Integración tiempo real (OpenSky Network API)
 - ✅ Fase 4: Mapa interactivo de vuelos en tiempo real
-- 🔄 Fase 5: Panel de control web (en progreso)
+- ✅ Fase 5: Panel web público con URL propia
 
 ## Resultados del modelo
 | Métrica | Valor |
