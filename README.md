@@ -12,12 +12,12 @@ en el Aeropuerto Internacional de Tocumen, Panamá.
 - ✅ Fase 5: Panel web público con URL propia
 
 ## Resultados del modelo
-| Métrica | Valor |
-|---|---|
-| Precisión general | 92.9% |
-| Vuelos de entrenamiento | 420,296 |
-| Vuelos de prueba | 105,074 |
-| Anticipación de alerta | 30–90 minutos |
+| Métrica | v1.0 (1 mes) | v2.0 (año completo) |
+|---|---|---|
+| Precisión general | 92.9% | **94.2%** |
+| Vuelos de entrenamiento | 420,296 | **5,572,197** |
+| Meses de datos | 1 | **12** |
+| Recall retrasos | 76% | **78%** |
 
 ## Tecnologías
 Python · XGBoost · Pandas · Folium · Google Colab · OpenSky Network API
