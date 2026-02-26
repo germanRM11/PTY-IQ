@@ -747,22 +747,25 @@ function nivelRiesgo(prob) {
 }
 
 // ── Modelo de predicción (lógica basada en patrones reales BTS) ───────────────
-function predecirRiesgo(vuelo) {
+function predecirRiesgo(vuelo, congestion = 0) {
   const hora = new Date().getHours();
-  const dia  = new Date().getDay(); // 0=Dom, 6=Sáb
+  const dia  = new Date().getDay();
 
   let riesgo = RETRASOS_POR_HORA[hora] || 25;
 
-  // Penalizar martes y viernes (días más caóticos)
+  // Patrones por día
   if (dia === 2 || dia === 5) riesgo += 5;
-  // Bonificar jueves (día más puntual)
   if (dia === 4) riesgo -= 5;
 
-  // Penalizar vuelos a baja altitud (posible aproximación tardía)
+  // Altitud baja = aproximación tardía
   if (vuelo.altitud && vuelo.altitud < 3000) riesgo += 8;
 
-  // Penalizar velocidad anormalmente baja
+  // Velocidad anormal
   if (vuelo.velocidad && vuelo.velocidad < 100) riesgo += 10;
+
+  // Congestión regional — más vuelos en el espacio aéreo = más riesgo
+  if (congestion > 15) riesgo += 8;
+  else if (congestion > 8) riesgo += 4;
 
   return Math.max(3, Math.min(97, riesgo));
 }
@@ -878,6 +881,35 @@ function actualizarStats(vuelos) {
 }
 
 // ── Obtener vuelos de OpenSky ─────────────────────────────────────────────────
+// Aerolíneas que operan en PTY
+const AEROLINEAS_PTY = [
+  'CM',  // Copa Airlines
+  'AA',  // American Airlines
+  'UA',  // United Airlines
+  'DL',  // Delta
+  'AV',  // Avianca
+  'LA', 'LR', 'LP',  // LATAM
+  'IB',  // Iberia
+  'NK',  // Spirit
+  'B6',  // JetBlue
+  'WN',  // Southwest
+  'AM',  // Aeroméxico
+  'MX',  // Mexicana
+  'AD',  // Azul
+  'G3',  // Gol
+  'AR',  // Aerolíneas Argentinas
+  'H2',  // Sky Airline
+  'VB',  // VivaAerobus
+  'Y4',  // Volaris
+  'XL',  // LATAM Ecuador
+  'KL',  // KLM
+  'AF',  // Air France
+  'LH',  // Lufthansa
+  'BA',  // British Airways
+  'EK',  // Emirates
+  'AC',  // Air Canada
+];
+
 async function obtenerVuelos() {
   const url = new URL('https://opensky-network.org/api/states/all');
   Object.entries(CONFIG.region).forEach(([k,v]) => url.searchParams.set(k, v));
@@ -888,20 +920,36 @@ async function obtenerVuelos() {
   const data   = await resp.json();
   const states = data.states || [];
 
-  return states
-    .filter(s => 
-      s[1] && s[1].trim() !== '' &&  // tiene indicativo
-      s[6] !== null && s[5] !== null  // tiene coordenadas reales
-    )
+  // Todos los vuelos con coordenadas válidas
+  const todos = states
+    .filter(s => s[1] && s[1].trim() !== '' && s[6] !== null && s[5] !== null)
     .map(s => ({
       indicativo: s[1].trim(),
       pais:       s[2] || '—',
-      lat:        parseFloat(s[6]),   // latitud real
-      lng:        parseFloat(s[5]),   // longitud real
+      lat:        parseFloat(s[6]),
+      lng:        parseFloat(s[5]),
       altitud:    s[7] ? parseFloat(s[7]) : null,
       velocidad:  s[9] ? parseFloat(s[9]) : null,
-    }))
-    .map(v => ({ ...v, prob: predecirRiesgo(v) }));
+      en_tierra:  s[8],
+    }));
+
+  // Congestión regional — todos los vuelos cercanos (para el modelo)
+  const congestion = todos.length;
+
+  // Filtrar solo vuelos de aerolíneas que operan en PTY
+  const vuelos_pty = todos.filter(v => {
+    const codigo = v.indicativo.substring(0, 2).toUpperCase();
+    return AEROLINEAS_PTY.includes(codigo);
+  });
+
+  console.log(`Total región: ${congestion} | Relevantes PTY: ${vuelos_pty.length}`);
+
+  // Pasar congestión al predictor
+  return vuelos_pty.map(v => ({ 
+    ...v, 
+    congestion_regional: congestion,
+    prob: predecirRiesgo(v, congestion) 
+  }));
 }
 
 // ── Ciclo principal de actualización ─────────────────────────────────────────
