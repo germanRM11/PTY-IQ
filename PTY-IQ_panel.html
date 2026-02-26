@@ -889,14 +889,17 @@ async function obtenerVuelos() {
   const states = data.states || [];
 
   return states
-    .filter(s => s[1] && s[1].trim() !== '')
+    .filter(s => 
+      s[1] && s[1].trim() !== '' &&  // tiene indicativo
+      s[6] !== null && s[5] !== null  // tiene coordenadas reales
+    )
     .map(s => ({
       indicativo: s[1].trim(),
       pais:       s[2] || '—',
-      lat:        s[6],
-      lng:        s[5],
-      altitud:    s[7],
-      velocidad:  s[9],
+      lat:        parseFloat(s[6]),   // latitud real
+      lng:        parseFloat(s[5]),   // longitud real
+      altitud:    s[7] ? parseFloat(s[7]) : null,
+      velocidad:  s[9] ? parseFloat(s[9]) : null,
     }))
     .map(v => ({ ...v, prob: predecirRiesgo(v) }));
 }
